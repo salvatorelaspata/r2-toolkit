@@ -30,3 +30,9 @@ npm install
 # Run the toolkit
 npm start
 ```
+
+If you want to show the result (console.table) in a file you can use the following command:
+
+```bash
+npm start > output.txt
+```
