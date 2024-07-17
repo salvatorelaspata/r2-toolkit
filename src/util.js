@@ -1,0 +1,31 @@
+const _sizeUnit = (size) => {
+  return {
+    bytes: size,
+    kb: size / 1024,
+    mb: size / 1024 / 1024,
+    gb: size / 1024 / 1024 / 1024
+  }
+}
+export const sizeToHumanReadable = (size, full) => {
+  const { bytes, kb, mb, gb } = _sizeUnit(size);
+  if (full) return `${bytes} bytes; ${kb.toFixed(2)} KB; ${mb.toFixed(2)} MB; ${gb.toFixed(2)} GB`;
+  // return the size in the most appropriate unit
+  if (size < 1024) return `${size} bytes`; // < 1 KB
+  else if (size < 1024 * 1024) return `${kb.toFixed(2)} KB`; // < 1 MB
+  else if (size < 1024 * 1024 * 1024) return `${mb.toFixed(2)} MB`; // < 1 GB
+  else return `${gb.toFixed(2)} GB`;
+}
+
+export const manipolatedObjects = (objects) => objects.map(obj => ({
+  Key: obj.Key, 
+  LastModified: obj.LastModified,
+  sizeHumanReadable: sizeToHumanReadable(obj.Size)
+}))
+
+export const totalSize = (objects) => objects.reduce((acc, obj) => acc + obj.Size, 0);
+
+export const printObjects = (objects) => {
+    console.table(manipolatedObjects(objects));
+    const size = objects.reduce((acc, obj) => acc + obj.Size, 0);
+    console.log(`Total size: ${sizeToHumanReadable(size, true)}`);
+}
