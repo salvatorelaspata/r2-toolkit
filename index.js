@@ -10,7 +10,8 @@ buckets.forEach(bucket => {
       return;
     }
     const manipolatedObjects = objects.map(obj => ({
-      ...obj, 
+      Key: obj.Key, 
+      LastModified: obj.LastModified,
       sizeHumanReadable: obj.Size < 1024 ? `${obj.Size} bytes` : obj.Size < 1024 * 1024 ? `${(obj.Size / 1024).toFixed(2)} KB` : `${(obj.Size / 1024 / 1024).toFixed(2)} MB`
     }))
     console.table(manipolatedObjects);
