@@ -2,83 +2,89 @@
 
 import { createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
-import { checkbox, confirm, select } from "@inquirer/prompts";
+import { checkbox, confirm, input, select } from "@inquirer/prompts";
 import { program } from "commander";
 import ascii from "./ascii.js";
-import { deleteEmptyBucket, getObject, listBuckets, listObjects } from "./api.js";
+import {
+  createBucket,
+  deleteEmptyBucket,
+  deleteObject,
+  getObject,
+  listBuckets,
+  listObjects,
+} from "./api.js";
 import {
   log,
-  manipolatedObjects,
   objectToChoices,
   printObjects,
   sizeToHumanReadable,
   totalSize,
 } from "./util.js";
-import { allOrSelectedChoices, todoChoices } from "./choises.js";
+import { allOrSelectedChoices, bucketsQ, todoQ } from "./choises.js";
 
-program.version("1.0.0").description("CloudFlare R2 - CLI");
-
-program.action(async () => {
-  console.log(ascii("CloudFlare R2"));
-  console.log(ascii("C L I"));
+const runCLI = async () => {
   // todo
   const todo = await select({
-    message: "Seleziona un bucket",
-    choices: todoChoices,
+    message: todoQ.message,
+    choices: todoQ.choices,
   });
-
-  // list buckets
-  const buckets = await listBuckets();
-  if (!buckets || buckets.length === 0) {
-    log.error("No buckets found");
-    process.exit(1);
-  }
-  // select bucket choice
-  const all = { name: "ALL", value: "all", description: `All buckets (${buckets.map((b) => b.Name).join(', ')})` };
-  const bucketChoices = buckets.map((bucket) => ({
-    name: bucket.Name,
-    value: bucket.Name,
-    description: `Bucket: ${bucket.Name}`,
-  }));
-
-  if (buckets.length > 1) bucketChoices.unshift(all);
-
-  // select bucket
-  const bucketName = await select({
-    message: "Seleziona un bucket",
-    choices: bucketChoices,
-  });
-
-  let selectedBucket = [];
-  if (bucketName === "all") selectedBucket = buckets;
-  else
-    selectedBucket.push(buckets.find((bucket) => bucket.Name === bucketName));
-
-  // list objects for each selected bucket
   const objects = [];
   const objectChoices = [];
-  for (const bucket of selectedBucket) {
-    log.info(`Listing objects in bucket ${bucket.Name}`);
-    const _objects = await listObjects(bucket.Name);
-    if (!_objects || _objects.length === 0) {
-      log.info(`No objects in bucket ${bucket.Name}`);
-      continue;
-    } else {
-      log.info(`Found ${_objects.length} objects in bucket ${bucket.Name}`);
+  if (todo !== "create") {
+    // list buckets
+    const buckets = await listBuckets();
+    if (!buckets || buckets.length === 0) {
+      log.error("No buckets found");
+      process.exit(1);
     }
-    objects.push(..._objects);
-    objectChoices.push(
-      ..._objects.map((obj) => objectToChoices(bucket.Name, obj))
-    );
+
+    // select bucket
+    const bucketName = await select({
+      message: bucketsQ.message,
+      choices: bucketsQ.choices(buckets),
+    });
+
+    let selectedBucket = [];
+    if (bucketName === "all") selectedBucket = buckets;
+    else
+      selectedBucket.push(buckets.find((bucket) => bucket.Name === bucketName));
+
+    // list objects for each selected bucket
+    for (const bucket of selectedBucket) {
+      log.info(`Listing objects in bucket ${bucket.Name}`);
+      const _objects = await listObjects(bucket.Name);
+      if (!_objects || _objects.length === 0) {
+        log.info(`No objects in bucket ${bucket.Name}`);
+        continue;
+      } else {
+        log.info(`Found ${_objects.length} objects in bucket ${bucket.Name}`);
+      }
+      objects.push(..._objects);
+      objectChoices.push(
+        ..._objects.map((obj) => objectToChoices(bucket.Name, obj))
+      );
+    }
   }
 
-  if(todo !== "delete-bucket" && objects.length === 0 ) {
+  if (todo !== "delete-buckets" && todo !== "create" && !objects && objects.length === 0) {
     log.error("No objects found");
     process.exit(1);
   }
 
   // todo
   switch (todo) {
+    case "create":
+      const name = await input({
+        message: "Enter bucket name",
+      });
+      log.info(`Creating bucket ${name}`);
+      try {
+        await createBucket(name);
+        log.success(`Created bucket ${name}`);
+      } catch (error) {
+        log.error(`Error creating bucket ${name}: ${error}`);
+      }
+      break;
     case "list":
       objects && printObjects(objects);
       break;
@@ -111,7 +117,7 @@ program.action(async () => {
           log.error("Aborted");
           process.exit(1);
         }
-        objectsToDownload = objects;
+        objectsToDownload = objectChoices.map((o) => o.value);
       }
 
       // loop over objects to download
@@ -169,28 +175,23 @@ program.action(async () => {
           log.error("Aborted");
           process.exit(1);
         }
-        objectsToDelete = objects;
+        objectsToDelete = objectChoices.map((o) => o.value);
       }
 
       // loop over objects to delete
       for (const obj of objectsToDelete) {
-        // get object
-        log.info(
-          `Deleting ${obj.name} from bucket ${obj.bucket} (${obj.size})`
-        );
+        log.info(`Deleting ${obj.key} from bucket ${obj.bucket} (${obj.size})`);
         try {
-          await getObject(obj.bucket, obj.key);
-          log.success(`Deleted ${obj.name} from bucket ${obj.bucket}`);
+          await deleteObject(obj.bucket, obj.key);
+          log.success(`Deleted ${obj.key} from bucket ${obj.bucket}`);
         } catch (error) {
-          log.error(`Error deleting ${obj.name} from bucket ${obj.bucket}`);
+          log.error(`Error deleting ${obj.key} from bucket ${obj.bucket}`);
         }
       }
       break;
     case "delete-buckets":
       const c = await confirm({
-        message: `sure you want to delete ${
-          selectedBucket.length
-        } buckets?`,
+        message: `sure you want to delete ${selectedBucket.length} buckets?`,
       });
       if (!c) {
         log.error("Aborted");
@@ -211,6 +212,24 @@ program.action(async () => {
       log.error("Invalid choice");
       break;
   }
+  const shouldRestart = await confirm({
+    message: "Do you want to perform another action?",
+  });
+
+  if (shouldRestart) {
+    await runCLI();
+  } else {
+    log.success("Thank you for using CloudFlare R2 CLI. Bye!");
+    process.exit(0);
+  }
+};
+
+program.version("1.0.0").description("CloudFlare R2 - CLI");
+
+program.action(async () => {
+  console.log(ascii("CloudFlare R2"));
+  console.log(ascii("C L I"));
+  runCLI();
 });
 
 program.parse(process.argv);

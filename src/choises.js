@@ -1,4 +1,11 @@
-export const todoChoices = [
+export const todoQ = {
+  message: "Choise an action",
+  choices: [
+  {
+    name: "Create bucket",
+    value: "create",
+    description: "Create a new bucket",
+  },
   {
     name: "List objects",
     value: "list",
@@ -19,7 +26,22 @@ export const todoChoices = [
     value: "delete-buckets",
     description: "Delete only empty bucket",
   }
-]
+]}
+
+export const bucketsQ = {
+  message: "Seleziona un bucket",
+  choices: (buckets) => {
+    const all = { name: "ALL", value: "all", description: `All buckets (${buckets.map((b) => b.Name).join(', ')})` };
+    const bucketChoices = buckets.map((bucket) => ({
+      name: bucket.Name,
+      value: bucket.Name,
+      description: `Bucket: ${bucket.Name}`,
+    }));
+
+    if (buckets.length > 1) bucketChoices.unshift(all);
+    return bucketChoices;
+  },
+}
 
 export const allOrSelectedChoices =
   [
