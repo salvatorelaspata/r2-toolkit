@@ -1,3 +1,5 @@
+import chalk from "chalk";
+
 const _sizeUnit = (size) => {
   return {
     bytes: size,
@@ -19,7 +21,7 @@ export const sizeToHumanReadable = (size, full) => {
 export const manipolatedObjects = (objects) => objects.map(obj => ({
   Key: obj.Key, 
   LastModified: obj.LastModified,
-  sizeHumanReadable: sizeToHumanReadable(obj.Size)
+  Size: sizeToHumanReadable(obj.Size)
 }))
 
 export const totalSize = (objects) => objects.reduce((acc, obj) => acc + obj.Size, 0);
@@ -28,4 +30,22 @@ export const printObjects = (objects) => {
     console.table(manipolatedObjects(objects));
     const size = objects.reduce((acc, obj) => acc + obj.Size, 0);
     console.log(`Total size: ${sizeToHumanReadable(size, true)}`);
+}
+
+export const objectToChoices = (bucket, obj) => {
+  return { 
+    name: `[${bucket}] ${obj.Key} (${sizeToHumanReadable(obj.Size)})`, 
+    value: {
+      key: obj.Key, 
+      bucket: bucket, 
+      size: sizeToHumanReadable(obj.Size)
+    } 
+  }
+};
+
+export const log = {
+  info: (msg) => console.log(chalk.blue(`[INFO] ${msg}`)),
+  warning: (msg) => console.log(chalk.yellow(`[WARNING] ${msg}`)),
+  success: (msg) => console.log(chalk.green(`[SUCCESS] ${msg}`)),
+  error: (msg) => console.log(chalk.red(`[ERROR] ${msg}`)),
 }

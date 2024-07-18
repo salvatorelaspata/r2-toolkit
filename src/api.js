@@ -3,10 +3,31 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
   PutObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  CreateBucketCommand,
+  DeleteBucketCommand
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as signUrl } from '@aws-sdk/s3-request-presigner';
 import { clientS3 } from "./clientS3.js";
+
+export const createBucket = async (name) => {
+  const response = await clientS3.send(new CreateBucketCommand({ Bucket: name }));
+  return response;
+}
+
+const _deleteBucket = async (name) => {
+  const response = await clientS3.send(new DeleteBucketCommand({ Bucket: name }));
+  return response;
+}
+
+export const deleteEmptyBucket = async (name) => {
+  const objects = await listObjects(name);
+  if (objects && objects.length > 0) {
+    throw new Error("Bucket is not empty");
+  }
+  const response = await _deleteBucket(name);
+  return response;
+}
 
 export const listBuckets = async () => {
   const response = await clientS3.send(new ListBucketsCommand({}));

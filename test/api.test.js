@@ -1,3 +1,4 @@
+// test api
 import { test } from "node:test";
 import assert from "node:assert";
 import {config} from 'dotenv'
@@ -10,6 +11,8 @@ import {
   getSignedUrl,
   putObject,
   deleteObject,
+  createBucket,
+  deleteEmptyBucket,
 } from "../src/api.js";
 
 const {CLOUDFLARE_R2_TEST_BUCKET_NAME} = process.env;
@@ -55,4 +58,24 @@ test("Create and delete an object", async () => {
   } catch (error) {
     assert.strictEqual(error.name, "NoSuchKey");
   }
+});
+const ts = Date.now();
+
+// test create bucket
+test("should create a bucket", async () => {  
+  const bucketName = "test-bucket-" + ts;
+  const response = await createBucket(bucketName);
+  assert.strictEqual(typeof response === "object", true);
+});
+
+// test delete bucket
+test("should delete a bucket", async () => {
+  const bucketName = "test-bucket-" + ts;
+  const response = await deleteEmptyBucket(bucketName);
+  assert.strictEqual(typeof response === "object", true);
+});
+
+test.after(() => {
+  console.log('All tests completed, exiting.');
+  process.exit(0);
 });
