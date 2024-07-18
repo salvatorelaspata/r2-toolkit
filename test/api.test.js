@@ -15,7 +15,14 @@ import {
   deleteEmptyBucket,
 } from "../src/api.js";
 
-const {CLOUDFLARE_R2_TEST_BUCKET_NAME} = process.env;
+const ts = Date.now();
+const bucketName = "test-bucket-" + ts;
+
+// test create bucket
+test("should create a bucket", async () => {  
+  const response = await createBucket(bucketName);
+  assert.strictEqual(typeof response === "object", true);
+});
 
 test("should return a list of buckets", async () => {
   const response = await listBuckets();
@@ -23,49 +30,43 @@ test("should return a list of buckets", async () => {
 });
 
 test("should return a list of objects", async () => {
-  const response = await listObjects(CLOUDFLARE_R2_TEST_BUCKET_NAME);
+  const create = await putObject(bucketName, "hello.txt", "Hello World!");
+  assert.strictEqual(typeof create === "object", true);
+  const response = await listObjects(bucketName);
   assert.strictEqual(Array.isArray(response), true);
 });
 
 test("should return an object", async () => {
   const file = "hello.txt";
-  const create = await putObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file, "Hello World!");
+  const create = await putObject(bucketName, file, "Hello World!");
   assert.strictEqual(typeof create === "object", true);
-  const response = await getObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+  const response = await getObject(bucketName, file);
   assert.strictEqual(typeof response === "object", true);
-  const deleteResponse = await deleteObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+  const deleteResponse = await deleteObject(bucketName, file);
   assert.strictEqual(typeof deleteResponse === "object", true);
 });
 
 test("should return a signed URL", async () => {
   const file = "hello.txt";
-  const create = await putObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file, "Hello World!");
+  const create = await putObject(bucketName, file, "Hello World!");
   assert.strictEqual(typeof create === "object", true);
-  const response = await getSignedUrl(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+  const response = await getSignedUrl(bucketName, file);
   assert.strictEqual(typeof response === "string", true);
-  const deleteResponse = await deleteObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+  const deleteResponse = await deleteObject(bucketName, file);
   assert.strictEqual(typeof deleteResponse === "object", true);
 });
 
 test("Create and delete an object", async () => {
   const file = "test.txt";
-  const response = await putObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file, "Hello World!");
+  const response = await putObject(bucketName, file, "Hello World!");
   assert.strictEqual(typeof response === "object", true);
-  const deleteResponse = await deleteObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+  const deleteResponse = await deleteObject(bucketName, file);
   assert.strictEqual(typeof deleteResponse === "object", true);
   try {
-    await getObject(CLOUDFLARE_R2_TEST_BUCKET_NAME, file);
+    await getObject(bucketName, file);
   } catch (error) {
     assert.strictEqual(error.name, "NoSuchKey");
   }
-});
-const ts = Date.now();
-
-// test create bucket
-test("should create a bucket", async () => {  
-  const bucketName = "test-bucket-" + ts;
-  const response = await createBucket(bucketName);
-  assert.strictEqual(typeof response === "object", true);
 });
 
 // test delete bucket
