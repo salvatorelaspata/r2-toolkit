@@ -30,6 +30,8 @@ const runCLI = async () => {
   });
   const objects = [];
   const objectChoices = [];
+  let selectedBucket = [];
+  
   if (todo !== "create") {
     // list buckets
     const buckets = await listBuckets();
@@ -44,7 +46,6 @@ const runCLI = async () => {
       choices: bucketsQ.choices(buckets),
     });
 
-    let selectedBucket = [];
     if (bucketName === "all") selectedBucket = buckets;
     else
       selectedBucket.push(buckets.find((bucket) => bucket.Name === bucketName));
