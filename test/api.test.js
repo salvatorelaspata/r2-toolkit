@@ -33,6 +33,7 @@ test("should return a list of objects", async () => {
   const create = await putObject(bucketName, "hello.txt", "Hello World!");
   assert.strictEqual(typeof create === "object", true);
   const response = await listObjects(bucketName);
+  console.log(response);
   assert.strictEqual(Array.isArray(response), true);
 });
 

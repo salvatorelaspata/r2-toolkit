@@ -19,6 +19,7 @@ export const sizeToHumanReadable = (size, full) => {
 }
 
 export const manipolatedObjects = (objects) => objects.map(obj => ({
+  bucket: obj.bucket,
   Key: obj.Key, 
   LastModified: obj.LastModified,
   Size: sizeToHumanReadable(obj.Size)

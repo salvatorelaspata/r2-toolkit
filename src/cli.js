@@ -31,7 +31,7 @@ const runCLI = async () => {
   const objects = [];
   const objectChoices = [];
   let selectedBucket = [];
-  
+
   if (todo !== "create") {
     // list buckets
     const buckets = await listBuckets();
@@ -60,7 +60,7 @@ const runCLI = async () => {
       } else {
         log.info(`Found ${_objects.length} objects in bucket ${bucket.Name}`);
       }
-      objects.push(..._objects);
+      objects.push(..._objects.map((obj) => ({ ...obj, bucket: bucket.Name })));
       objectChoices.push(
         ..._objects.map((obj) => objectToChoices(bucket.Name, obj))
       );
